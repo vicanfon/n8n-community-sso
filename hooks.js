@@ -41,24 +41,13 @@ module.exports = {
               return next();
             }
 
-            // Allow SSO to create the first user as instance owner
+            // Skip if instance owner is already set up
             const instanceOwnerSetUp = config.get('userManagement.isInstanceOwnerSetUp', false);
             console.log(`[HOOK DEBUG] instanceOwnerSetUp = ${instanceOwnerSetUp}`);
-
-            // If no instance owner exists yet, check if there are any users at all
-            if (!instanceOwnerSetUp) {
-              const userCount = await UserRepo.count();
-              console.log(`[HOOK DEBUG] User count = ${userCount}`);
-              if (userCount === 0) {
-                // No users exist - we'll create the first SSO user as the instance owner
-                console.log('[HOOK DEBUG] No users exist, will create first user as owner');
-                this.logger?.info('No instance owner set up yet. First SSO user will become the owner.');
-              } else {
-                // Users exist but instance owner not marked as set up - skip SSO for safety
-                console.log(`[HOOK DEBUG] ${userCount} users exist but owner not set up - EXITING`);
-                this.logger?.debug('Instance owner setup incomplete but users exist. Skipping SSO.');
-                return next();
-              }
+            if (instanceOwnerSetUp) {
+              console.log('[HOOK DEBUG] Instance owner already set up, SSO will work normally');
+            } else {
+              console.log('[HOOK DEBUG] Instance owner not set up, SSO will create/login users');
             }
 
             // Skip if auth cookie already present
