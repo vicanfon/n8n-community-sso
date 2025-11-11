@@ -117,12 +117,15 @@ module.exports = {
 
             // 2) If not found — create the user and a project
             if (!user) {
+              console.log('[HOOK DEBUG] User not found, creating new user');
               const hashed = await hash(randomBytes(16).toString('hex'), 10);
 
               // Check if this should be the instance owner (first user)
               const userCount = await UserRepo.count();
+              console.log(`[HOOK DEBUG] Current user count before creation: ${userCount}`);
               const isFirstUser = userCount === 0;
               const userRole = isFirstUser ? 'global:owner' : 'global:member';
+              console.log(`[HOOK DEBUG] Will create user with role: ${userRole}`);
 
               const userData = {
                 email: userEmail,
@@ -132,11 +135,20 @@ module.exports = {
               if (userFirstName) userData.firstName = userFirstName;
               if (userLastName) userData.lastName = userLastName;
 
-              const created = await UserRepo.createUserWithProject(userData);
-              user = created.user;
+              console.log(`[HOOK DEBUG] Calling createUserWithProject with data: ${JSON.stringify({...userData, password: '[REDACTED]'})}`);
 
-              const roleLabel = isFirstUser ? 'instance owner' : 'member';
-              this.logger?.info(`Created new user as ${roleLabel}: ${userEmail} (${userFirstName} ${userLastName}) via SSO`);
+              try {
+                const created = await UserRepo.createUserWithProject(userData);
+                user = created.user;
+                console.log(`[HOOK DEBUG] User created successfully: ${user.id}`);
+
+                const roleLabel = isFirstUser ? 'instance owner' : 'member';
+                this.logger?.info(`Created new user as ${roleLabel}: ${userEmail} (${userFirstName} ${userLastName}) via SSO`);
+              } catch (createError) {
+                console.log(`[HOOK DEBUG] ERROR creating user: ${createError.message}`);
+                console.log(`[HOOK DEBUG] Error stack: ${createError.stack}`);
+                throw createError;
+              }
             } else {
               // 3) Update first/last name if they changed upstream
               let changed = false;
@@ -188,7 +200,10 @@ module.exports = {
 
             return next();
           } catch (error) {
+            console.log(`[HOOK DEBUG] CRITICAL ERROR in SSO middleware: ${error.message}`);
+            console.log(`[HOOK DEBUG] Error stack: ${error.stack}`);
             this.logger?.error(`SSO middleware error: ${error.message}`);
+            this.logger?.error(`SSO middleware stack: ${error.stack}`);
             return next(error);
           }
         });
