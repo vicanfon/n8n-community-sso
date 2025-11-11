@@ -77,8 +77,7 @@ services:
     volumes:
       - n8n_cache:/home/node/.n8n
       - ./hooks.js:/home/node/hooks.js:ro
-    ports:
-      - "5678:5678"
+    # Port 5678 removed - access ONLY through nginx on port 80 for proper SSO
     depends_on:
       - oauth2-proxy
     restart: unless-stopped
