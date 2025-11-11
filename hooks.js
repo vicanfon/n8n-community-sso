@@ -120,12 +120,10 @@ module.exports = {
               console.log('[HOOK DEBUG] User not found, creating new user');
               const hashed = await hash(randomBytes(16).toString('hex'), 10);
 
-              // Check if this should be the instance owner (first user)
-              const userCount = await UserRepo.count();
-              console.log(`[HOOK DEBUG] Current user count before creation: ${userCount}`);
-              const isFirstUser = userCount === 0;
-              const userRole = isFirstUser ? 'global:owner' : 'global:member';
-              console.log(`[HOOK DEBUG] Will create user with role: ${userRole}`);
+              // Check if this should be the instance owner
+              // Use instanceOwnerSetUp instead of userCount because n8n may create placeholder users during init
+              const userRole = !instanceOwnerSetUp ? 'global:owner' : 'global:member';
+              console.log(`[HOOK DEBUG] instanceOwnerSetUp=${instanceOwnerSetUp}, assigning role: ${userRole}`);
 
               const userData = {
                 email: userEmail,
@@ -142,7 +140,7 @@ module.exports = {
                 user = created.user;
                 console.log(`[HOOK DEBUG] User created successfully: ${user.id}`);
 
-                const roleLabel = isFirstUser ? 'instance owner' : 'member';
+                const roleLabel = !instanceOwnerSetUp ? 'instance owner' : 'member';
                 this.logger?.info(`Created new user as ${roleLabel}: ${userEmail} (${userFirstName} ${userLastName}) via SSO`);
               } catch (createError) {
                 console.log(`[HOOK DEBUG] ERROR creating user: ${createError.message}`);
