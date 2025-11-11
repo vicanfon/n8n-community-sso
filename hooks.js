@@ -2,12 +2,16 @@ module.exports = {
   n8n: {
     ready: [
       async function ({ app }, config) {
+        console.log('[HOOK DEBUG] External hook is being loaded!');
         const headerName = process.env.N8N_FORWARD_AUTH_HEADER;
+        console.log(`[HOOK DEBUG] N8N_FORWARD_AUTH_HEADER = ${headerName}`);
         if (!headerName) {
+          console.log('[HOOK DEBUG] No header name set, exiting');
           this.logger?.info('N8N_FORWARD_AUTH_HEADER not set; SSO middleware disabled.');
           return;
         }
 
+        console.log(`[HOOK DEBUG] SSO middleware initializing with header: ${headerName}`);
         this.logger?.info(`SSO middleware initializing with header: ${headerName}`);
 
         const Layer = require('router/lib/layer');
