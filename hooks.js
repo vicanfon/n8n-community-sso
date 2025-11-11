@@ -43,22 +43,30 @@ module.exports = {
 
             // Allow SSO to create the first user as instance owner
             const instanceOwnerSetUp = config.get('userManagement.isInstanceOwnerSetUp', false);
+            console.log(`[HOOK DEBUG] instanceOwnerSetUp = ${instanceOwnerSetUp}`);
 
             // If no instance owner exists yet, check if there are any users at all
             if (!instanceOwnerSetUp) {
               const userCount = await UserRepo.count();
+              console.log(`[HOOK DEBUG] User count = ${userCount}`);
               if (userCount === 0) {
                 // No users exist - we'll create the first SSO user as the instance owner
+                console.log('[HOOK DEBUG] No users exist, will create first user as owner');
                 this.logger?.info('No instance owner set up yet. First SSO user will become the owner.');
               } else {
                 // Users exist but instance owner not marked as set up - skip SSO for safety
+                console.log(`[HOOK DEBUG] ${userCount} users exist but owner not set up - EXITING`);
                 this.logger?.debug('Instance owner setup incomplete but users exist. Skipping SSO.');
                 return next();
               }
             }
 
             // Skip if auth cookie already present
-            if (req.cookies?.[cookieName]) return next();
+            console.log(`[HOOK DEBUG] Checking for auth cookie: ${cookieName}, present: ${!!req.cookies?.[cookieName]}`);
+            if (req.cookies?.[cookieName]) {
+              console.log('[HOOK DEBUG] Auth cookie present - EXITING');
+              return next();
+            }
 
             // Read email and optional names from headers/JWT
             const emailHeader = req.headers[headerName.toLowerCase()] ?? req.headers[headerName];
