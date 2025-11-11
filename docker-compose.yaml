@@ -75,8 +75,8 @@ services:
       EXTERNAL_HOOK_FILES: "/home/node/.n8n/hooks.js"
       N8N_FORWARD_AUTH_HEADER: "Remote-Email"
     volumes:
-      - ./hooks.js:/home/node/.n8n/hooks.js:ro
       - n8n_cache:/home/node/.n8n
+      - ./hooks.js:/home/node/.n8n/hooks.js:ro
     ports:
       - "5678:5678"
     depends_on:
