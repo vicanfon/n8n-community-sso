@@ -142,6 +142,16 @@ module.exports = {
 
                 const roleLabel = !instanceOwnerSetUp ? 'instance owner' : 'member';
                 this.logger?.info(`Created new user as ${roleLabel}: ${userEmail} (${userFirstName} ${userLastName}) via SSO`);
+
+                // If this was the first owner, update the instanceOwnerSetUp flag
+                if (!instanceOwnerSetUp) {
+                  try {
+                    await config.set('userManagement.isInstanceOwnerSetUp', true);
+                    console.log('[HOOK DEBUG] Set instanceOwnerSetUp flag to true');
+                  } catch (configError) {
+                    console.log(`[HOOK DEBUG] Warning: Failed to set instanceOwnerSetUp flag: ${configError.message}`);
+                  }
+                }
               } catch (createError) {
                 console.log(`[HOOK DEBUG] ERROR creating user: ${createError.message}`);
                 console.log(`[HOOK DEBUG] Error stack: ${createError.stack}`);
