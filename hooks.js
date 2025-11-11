@@ -34,8 +34,12 @@ module.exports = {
 
         const layer = new Layer('/', { strict: false, end: false }, async (req, res, next) => {
           try {
+            console.log(`[HOOK DEBUG] Middleware triggered for URL: ${req.url}`);
             // Skip if URL matches ignore list
-            if (ignoreAuth.test(req.url)) return next();
+            if (ignoreAuth.test(req.url)) {
+              console.log(`[HOOK DEBUG] URL ${req.url} matches ignore list, skipping`);
+              return next();
+            }
 
             // Allow SSO to create the first user as instance owner
             const instanceOwnerSetUp = config.get('userManagement.isInstanceOwnerSetUp', false);
@@ -58,6 +62,12 @@ module.exports = {
 
             // Read email and optional names from headers/JWT
             const emailHeader = req.headers[headerName.toLowerCase()] ?? req.headers[headerName];
+            console.log(`[HOOK DEBUG] Headers received: ${JSON.stringify({
+              'remote-email': req.headers['remote-email'],
+              'Remote-Email': req.headers['Remote-Email'],
+              'authorization': req.headers['authorization'] ? 'present' : 'absent',
+              'x-auth-request-access-token': req.headers['x-auth-request-access-token'] ? 'present' : 'absent'
+            })}`);
             const authHeader = req.headers['authorization'] || req.headers['x-auth-request-access-token'] || '';
             let firstName = '';
             let lastName = '';
@@ -84,6 +94,7 @@ module.exports = {
 
             // If the forward-auth header with email is missing — do nothing
             if (!emailHeader) {
+              console.log(`[HOOK DEBUG] No ${headerName} header found, skipping SSO auto-login`);
               this.logger?.debug(`No ${headerName} header found, skipping SSO auto-login`);
               return next();
             }
@@ -93,10 +104,12 @@ module.exports = {
             const userLastName = Array.isArray(lastName) ? lastName[0] : String(lastName).trim();
 
             if (!userEmail) {
+              console.log(`[HOOK DEBUG] Empty ${headerName} header, skipping SSO auto-login`);
               this.logger?.debug(`Empty ${headerName} header, skipping SSO auto-login`);
               return next();
             }
 
+            console.log(`[HOOK DEBUG] SSO auto-login attempt for email: ${userEmail}, firstName: ${userFirstName}, lastName: ${userLastName}`);
             this.logger?.info(`SSO auto-login attempt for email: ${userEmail}`);
 
             // 1) Try to fetch the user including the 'role' relation (needed by n8n 1.112.6)
