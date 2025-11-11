@@ -72,11 +72,11 @@ services:
       N8N_PORT: "5678"
       N8N_PROTOCOL: "http"
       N8N_USER_MANAGEMENT_DISABLED: "false"
-      EXTERNAL_HOOK_FILES: "/home/node/.n8n/hooks.js"
+      EXTERNAL_HOOK_FILES: "/home/node/hooks.js"
       N8N_FORWARD_AUTH_HEADER: "Remote-Email"
     volumes:
       - n8n_cache:/home/node/.n8n
-      - ./hooks.js:/home/node/.n8n/hooks.js:ro
+      - ./hooks.js:/home/node/hooks.js:ro
     ports:
       - "5678:5678"
     depends_on:
