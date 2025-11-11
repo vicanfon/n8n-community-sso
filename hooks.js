@@ -33,8 +33,21 @@ module.exports = {
             // Skip if URL matches ignore list
             if (ignoreAuth.test(req.url)) return next();
 
-            // Skip until instance owner setup is complete
-            if (!config.get('userManagement.isInstanceOwnerSetUp', false)) return next();
+            // Allow SSO to create the first user as instance owner
+            const instanceOwnerSetUp = config.get('userManagement.isInstanceOwnerSetUp', false);
+
+            // If no instance owner exists yet, check if there are any users at all
+            if (!instanceOwnerSetUp) {
+              const userCount = await UserRepo.count();
+              if (userCount === 0) {
+                // No users exist - we'll create the first SSO user as the instance owner
+                this.logger?.info('No instance owner set up yet. First SSO user will become the owner.');
+              } else {
+                // Users exist but instance owner not marked as set up - skip SSO for safety
+                this.logger?.debug('Instance owner setup incomplete but users exist. Skipping SSO.');
+                return next();
+              }
+            }
 
             // Skip if auth cookie already present
             if (req.cookies?.[cookieName]) return next();
@@ -88,13 +101,18 @@ module.exports = {
               relations: ['role'],
             });
 
-            // 2) If not found — create the user (with 'global:member' role) and a project
+            // 2) If not found — create the user and a project
             if (!user) {
               const hashed = await hash(randomBytes(16).toString('hex'), 10);
 
+              // Check if this should be the instance owner (first user)
+              const userCount = await UserRepo.count();
+              const isFirstUser = userCount === 0;
+              const userRole = isFirstUser ? 'global:owner' : 'global:member';
+
               const userData = {
                 email: userEmail,
-                role: 'global:member', // string-based role is valid for createUserWithProject
+                role: userRole, // string-based role is valid for createUserWithProject
                 password: hashed,
               };
               if (userFirstName) userData.firstName = userFirstName;
@@ -103,7 +121,8 @@ module.exports = {
               const created = await UserRepo.createUserWithProject(userData);
               user = created.user;
 
-              this.logger?.info(`Created new user: ${userEmail} (${userFirstName} ${userLastName}) via SSO`);
+              const roleLabel = isFirstUser ? 'instance owner' : 'member';
+              this.logger?.info(`Created new user as ${roleLabel}: ${userEmail} (${userFirstName} ${userLastName}) via SSO`);
             } else {
               // 3) Update first/last name if they changed upstream
               let changed = false;
