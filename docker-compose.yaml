@@ -64,7 +64,7 @@ services:
       - keycloak
 
   n8n:
-    image: n8nio/n8n
+    image: n8nio/n8n:1.112.6
     container_name: n8n
     environment:
       N8N_BASIC_AUTH_ACTIVE: "false"
